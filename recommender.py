@@ -1,43 +1,54 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
+from surprise import SVD, Dataset, Reader
+import operator
+from collections import defaultdict
 
 
 class Recommender:
-
     def __init__(self, tuples):
-        self.data = {'user_id': [], 'link_id': [], 'values': []}
-        self.counter = dict()
-        for tuple_ in tuples:
-            self.data['user_id'].append(tuple_[0])
-            self.data['link_id'].append(tuple_[1])
-            self.data['values'].append(1)
-            if tuple_[1] not in self.counter.keys():
-                self.counter[tuple_[1]] = 1
-            else:
-                self.counter[tuple_[1]] += 1
+        if len(tuples) != 0:
+            self.data = {'user_id': [], 'link_id': [], 'values': []}
+            self.counter = dict()
+            for tuple_ in tuples:
+                self.data['user_id'].append(tuple_[0])
+                self.data['link_id'].append(tuple_[1])
+                self.data['values'].append(1)
+                if tuple_[1] not in self.counter.keys():
+                    self.counter[tuple_[1]] = 1
+                else:
+                    self.counter[tuple_[1]] += 1
 
-        self.data = pd.DataFrame(self.data)
-        self.data = self.data.pivot(index='user_id', columns='link_id', values='values').fillna(0)
-        self.similarity_matrix = cosine_similarity(self.data, self.data)
-        self.similarity_matrix = pd.DataFrame(self.similarity_matrix, index=self.data.index, columns=self.data.index)
+            self.data = pd.DataFrame(self.data)
+            reader = Reader()
+            self.svd_trainset = Dataset.load_from_df(self.data, reader=reader)
 
-        self.popular_links = np.array([x[0] for x in sorted(self.counter.items(), key=lambda x: x[1], reverse=True)[:25]])
+            self.popular_links = np.array(
+                [x[0] for x in sorted(self.counter.items(), key=lambda x: x[1], reverse=True)[:25]])
+
+    def get_top_n(self, predictions, n=5):
+        # First map the predictions to each user.
+        top_n = defaultdict(list)
+        # uid: User ID
+        # iid： item ID
+        # true_r: Real score
+        # est: Estimated score
+        for uid, iid, true_r, est, _ in predictions:
+            top_n[uid].append((iid, est))
+        # Then sort the predictions for each user and retrieve the k highest ones.
+        # Find the K highest scored items for each user
+        for uid, user_ratings in top_n.items():
+            user_ratings.sort(key=lambda x: x[1], reverse=True)
+            top_n[uid] = user_ratings[:n]
+
+        return top_n
 
     def recommend(self, user_id):
-        recommendation = []
-        for link_id in self.popular_links:
-            if link_id in self.data and user_id in self.similarity_matrix:
-                cosine_scores = self.similarity_matrix[user_id]
-                ratings_scores = self.data[user_id]
-                index_not_rated = ratings_scores[ratings_scores.isnull()].index
-                ratings_scores = ratings_scores.dropna()
-                cosine_scores = cosine_scores.drop(index_not_rated)
-                ratings_link = np.dot(ratings_scores, cosine_scores)/cosine_scores.sum()
-                recommendation.append(ratings_link)
-            else:
-                recommendation.append(0)
-        if sum(recommendation) == 0:
-            return np.array([x[0] for x in sorted(self.counter.items(), key=lambda x: x[1], reverse=True)[:5]])
-        else:
-            return self.popular_links[np.array(recommendation).argsort()[-5:][::-1]]
+        if len(self.data) != 0:
+            svd = SVD()
+            self.svd_trainset = self.svd_trainset.build_full_trainset()
+            svd.fit(self.svd_trainset)
+            testset = [(user_id, p, 0) for p in self.popular_links]
+            predictions = svd.test(testset)
+            return [pair[0] for pair in self.get_top_n(predictions)[user_id]]
