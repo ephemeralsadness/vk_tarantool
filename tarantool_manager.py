@@ -9,11 +9,6 @@ class TarantoolManager:
     def __init__(self, username, password):
         self.connection = tarantool.connect('localhost', 3301, user=username, password=password)
 
-        self.links = {}
-        self.reverse_links = {}
-        self.amounts = {}
-        self.last_times = {}
-
         # кортежи типа (link_id, link, amount, last_time)
         self.index = self.connection.space('index')
 
@@ -28,38 +23,40 @@ class TarantoolManager:
                 random.choice(self.ENCODE_SYMBOLS) for x in range(8)
             )
 
-            if short_link not in self.links:
+            tuples = self.index.select(short_link)
+            if len(tuples) == 0:
                 return short_link
 
     def save_link(self, link):
-        if link in self.reverse_links:
-            return self.reverse_links[link]
+        found_link = self.index.select(link, index=1)
+        if len(found_link) != 0:
+            return found_link[0][0]
 
-        key = self.encode(link)
-        self.links[key] = link
-        self.reverse_links[link] = key
-        self.amounts[key] = 0
-        self.last_times[key] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        link_id = self.encode(link)
+        self.index.insert((link_id, link, 0, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
-        return key
+        return link_id
 
     def get_link(self, link_id):
-        if link_id not in self.links:
+        found_link = self.index.select(link_id)
+        if len(found_link) == 0:
             return None
 
-        self.amounts[link_id] += 1
-        self.last_times[link_id] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.index.update(link_id, [
+            ('+', 2, 1),
+            ('=', 3, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        ])
 
-        return self.links[link_id]
+        return found_link[0][1]
 
     def get_full_link(self, link_id):
-        if link_id not in self.links:
+        found_link = self.index.select(link_id)
+        if len(found_link) == 0:
             return None
-        link = copy(self.links[link_id])
-        amount = copy(self.amounts[link_id])
-        last_time = copy(self.last_times[link_id])
 
-        self.amounts[link_id] += 1
-        self.last_times[link_id] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.index.update(link_id, [
+            ('+', 2, 1),
+            ('=', 3, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        ])
 
-        return link, amount, last_time
+        return found_link[0][1], found_link[0][2], found_link[0][3]
