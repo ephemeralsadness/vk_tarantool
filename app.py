@@ -18,7 +18,7 @@ def index():
 def info(link_id):
     image_filename = 'static/{}.png'.format(link_id)
     short_link = '{}/go/{}'.format(IP, link_id)
-    link, amount, last_datetime = tarantool_manager.get_full_link(link_id)
+    link, amount, last_datetime = tarantool_manager.get_full_link(link_id, request.remote_addr)
     if not os.path.isfile(image_filename):
         qrcode.make(short_link).save(image_filename)
 
@@ -26,7 +26,8 @@ def info(link_id):
                            image_filename=('/'+image_filename),
                            link=link,
                            amount=amount,
-                           last_datetime=last_datetime)
+                           last_datetime=last_datetime,
+                           recommendations=tarantool_manager.get_recommendations(request.remote_addr))
 
 
 @app.route('/submit/', methods=['POST'])
@@ -51,7 +52,7 @@ def set_link():
 
 @app.route('/go/<string:link_id>')
 def go(link_id):
-    link = tarantool_manager.get_link(link_id)
+    link = tarantool_manager.get_link(link_id, request.remote_addr)
     if link is None:
         abort(404, description='Link ID is bad')
     return redirect(link, code=301)

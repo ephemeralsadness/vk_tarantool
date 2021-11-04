@@ -36,7 +36,9 @@
                 <div class="card-body">
                     <h4>Ссылки рекомендации</h4>
                     <ol>
-                        <li>fdshufsdhiufhsdhufiu</li>
+                        {% for rec in recommendations %}
+                        <li><a href="{{ rec }}"> rec </a></li>
+                        {% endfor %}
                     </ol>
                 </div>
             </div>
