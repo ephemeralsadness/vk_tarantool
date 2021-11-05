@@ -45,8 +45,7 @@ class Recommender():
 
     def recommend(self, user_id):
         svd = SVD()
-        self.svd_trainset = self.svd_trainset.build_full_trainset()
-        svd.fit(self.svd_trainset)
+        svd.fit(self.svd_trainset.build_full_trainset())
         testset = [(user_id, p, 0) for p in self.popular_links]
         predictions = svd.test(testset)
-        return [pair[0] for pair in self.get_top_n(predictions)[user_id] if pair[0] != user_id]
+        return [pair[0] for pair in self.get_top_n(predictions)[user_id]]
