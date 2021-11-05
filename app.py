@@ -22,12 +22,14 @@ def info(link_id):
     if not os.path.isfile(image_filename):
         qrcode.make(short_link).save(image_filename)
 
+    recommendations = tarantool_manager.get_recommendations(request.remote_addr)
+    recommendations = [x for x in recommendations if x != link_id]
     return render_template('link_info.html',
                            image_filename=('/'+image_filename),
                            link=link,
                            amount=amount,
                            last_datetime=last_datetime,
-                           recommendations=tarantool_manager.get_recommendations(request.remote_addr))
+                           recommendations=recommendations)
 
 
 @app.route('/submit/', methods=['POST'])

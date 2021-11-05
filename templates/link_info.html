@@ -37,7 +37,8 @@
                     <h4>Ссылки рекомендации</h4>
                     <ol>
                         {% for rec in recommendations %}
-                        <li><a href="{{ rec }}"> {{ rec }} </a></li>
+                            {% if rec != %}
+                                <li><a href="{{ rec }}"> {{ rec }} </a></li>
                         {% endfor %}
                     </ol>
                 </div>

@@ -45,9 +45,7 @@ class TarantoolManager:
         return link_id
 
     def get_recommendations(self, ip):
-        a = self.recommender.recommend(ip2int(ip))
-        print(a)
-        return a
+        return self.recommender.recommend(ip2int(ip))
 
     def get_link(self, link_id, ip):
         return self.get_full_link(link_id, ip)[0]

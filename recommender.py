@@ -8,7 +8,6 @@ from collections import defaultdict
 
 class Recommender():
     def __init__(self, tuples):
-        print(tuples)
         self.data = {'user_id': [], 'link_id': [], 'values': []}
         self.counter = dict()
         for tuple_ in tuples:
@@ -45,7 +44,7 @@ class Recommender():
         return top_n
 
     def recommend(self, user_id):
-        svd = SVD()
+        svd = SVD(random_state=3)
         svd.fit(self.svd_trainset.build_full_trainset())
         testset = [(user_id, p, 0) for p in self.popular_links]
         predictions = svd.test(testset)
