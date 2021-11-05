@@ -20,7 +20,7 @@ class TarantoolManager:
         self.index = self.connection.space('index')
 
         self.tuples = defaultdict(int)
-        self.recommender = Recommender([('127.0.0.1', 'https://vk.com')])
+        self.recommender = Recommender([('127.0.0.1', 'https://vk.com', 1)])
 
         self.ENCODE_SYMBOLS = string.ascii_letters + string.digits
 
