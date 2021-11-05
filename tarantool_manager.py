@@ -67,6 +67,5 @@ class TarantoolManager:
         if n > 0 and n & (n - 1) == 0:
             a = [(key[0], key[1], value) for key, value in self.tuples.items()]
             self.recommender = Recommender(a)
-            self.tuples = defaultdict(int)
 
         return found_link[0][1], found_link[0][2], found_link[0][3]
