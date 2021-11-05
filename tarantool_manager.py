@@ -1,4 +1,3 @@
-from copy import copy
 from datetime import datetime
 import random
 import string
@@ -6,6 +5,7 @@ import tarantool
 from recommender import Recommender
 import socket
 import struct
+from collections import defaultdict
 
 
 def ip2int(ip):
@@ -22,12 +22,12 @@ class TarantoolManager:
         # кортежи типа (ip, link_id)
         self.logs = self.connection.space('log')
 
-        self.tuples = []
-        self.recommender = Recommender([])
+        self.tuples = defaultdict(int)
+        self.recommender = Recommender([('127.0.0.1', 'https://vk.com')])
 
         self.ENCODE_SYMBOLS = string.ascii_letters + string.digits
 
-    def encode(self, link):
+    def encode(self):
         while True:
             short_link = ''.join(
                 random.choice(self.ENCODE_SYMBOLS) for x in range(8)
@@ -42,7 +42,7 @@ class TarantoolManager:
         if len(found_link) != 0:
             return found_link[0][0]
 
-        link_id = self.encode(link)
+        link_id = self.encode()
         self.index.insert((link_id, link, 0, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
 
         return link_id
@@ -63,9 +63,9 @@ class TarantoolManager:
             ('=', 3, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         ])
 
-        self.tuples.append((ip2int(ip), link_id))
-        if len(self.tuples) >= 1000:
-            recommender = Recommender(self.tuples)
-            self.tuples.clear()
+        self.tuples[(ip2int(ip), link_id)] += 1
+        if len(self.tuples) >= 100:
+            self.recommender = Recommender(self.tuples)
+            self.tuples = defaultdict(int)
 
         return found_link[0][1], found_link[0][2], found_link[0][3]
