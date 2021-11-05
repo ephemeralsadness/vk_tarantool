@@ -5,7 +5,7 @@ from tarantool_manager import TarantoolManager
 from useful_data import TARANTOOL_USERNAME, TARANTOOL_PASSWORD
 
 app = Flask(__name__)
-IP = 'http://127.0.0.1:5000'
+IP = '87.239.110.13'
 tarantool_manager = TarantoolManager(TARANTOOL_USERNAME, TARANTOOL_PASSWORD)
 
 
