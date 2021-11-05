@@ -19,9 +19,6 @@ class TarantoolManager:
         # кортежи типа (link_id, link, amount, last_time)
         self.index = self.connection.space('index')
 
-        # кортежи типа (ip, link_id)
-        self.logs = self.connection.space('log')
-
         self.tuples = defaultdict(int)
         self.recommender = Recommender([('127.0.0.1', 'https://vk.com')])
 
@@ -65,7 +62,8 @@ class TarantoolManager:
 
         self.tuples[(ip2int(ip), link_id)] += 1
         if len(self.tuples) >= 100:
-            self.recommender = Recommender(self.tuples)
+            a = [(key[0], key[1], value) for key, value in self.tuples.items()]
+            self.recommender = Recommender(a)
             self.tuples = defaultdict(int)
 
         return found_link[0][1], found_link[0][2], found_link[0][3]
