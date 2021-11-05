@@ -61,7 +61,8 @@ class TarantoolManager:
         ])
 
         self.tuples[(ip2int(ip), link_id)] += 1
-        if len(self.tuples) >= 100:
+        n = len(self.tuples)
+        if n > 0 and n & (n - 1) == 0:
             a = [(key[0], key[1], value) for key, value in self.tuples.items()]
             self.recommender = Recommender(a)
             self.tuples = defaultdict(int)
