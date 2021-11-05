@@ -6,28 +6,27 @@ import operator
 from collections import defaultdict
 
 
-class Recommender:
+class Recommender():
     def __init__(self, tuples):
-        if len(tuples) != 0:
-            self.data = {'user_id': [], 'link_id': [], 'values': []}
-            self.counter = dict()
-            for tuple_ in tuples:
-                self.data['user_id'].append(tuple_[0])
-                self.data['link_id'].append(tuple_[1])
-                self.data['values'].append(1)
-                if tuple_[1] not in self.counter.keys():
-                    self.counter[tuple_[1]] = 1
-                else:
-                    self.counter[tuple_[1]] += 1
+        self.data = {'user_id': [], 'link_id': [], 'values': []}
+        self.counter = dict()
+        for tuple_ in tuples:
+            self.data['user_id'].append(tuple_[0])
+            self.data['link_id'].append(tuple_[1])
+            self.data['values'].append(1)
+            if tuple_[1] not in self.counter.keys():
+                self.counter[tuple_[1]] = 1
+            else:
+                self.counter[tuple_[1]] += 1
 
-            self.data = pd.DataFrame(self.data)
-            reader = Reader()
-            self.svd_trainset = Dataset.load_from_df(self.data, reader=reader)
+        self.data = pd.DataFrame(self.data)
+        reader = Reader()
+        self.svd_trainset = Dataset.load_from_df(self.data, reader=reader)
 
-            self.popular_links = np.array(
-                [x[0] for x in sorted(self.counter.items(), key=lambda x: x[1], reverse=True)[:25]])
+        self.popular_links = np.array(
+            [x[0] for x in sorted(self.counter.items(), key=lambda x: x[1], reverse=True)[:25]])
 
-    def get_top_n(self, predictions, n=5):
+    def get_top_n(self, predictions, n=6):
         # First map the predictions to each user.
         top_n = defaultdict(list)
         # uid: User ID
@@ -45,10 +44,9 @@ class Recommender:
         return top_n
 
     def recommend(self, user_id):
-        if len(self.data) != 0:
-            svd = SVD()
-            self.svd_trainset = self.svd_trainset.build_full_trainset()
-            svd.fit(self.svd_trainset)
-            testset = [(user_id, p, 0) for p in self.popular_links]
-            predictions = svd.test(testset)
-            return [pair[0] for pair in self.get_top_n(predictions)[user_id]]
+        svd = SVD()
+        self.svd_trainset = self.svd_trainset.build_full_trainset()
+        svd.fit(self.svd_trainset)
+        testset = [(user_id, p, 0) for p in self.popular_links]
+        predictions = svd.test(testset)
+        return [pair[0] for pair in self.get_top_n(predictions)[user_id] if pair[0] != user_id]
